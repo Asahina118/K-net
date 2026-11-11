@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <array>
 #include <format>
@@ -11,6 +12,10 @@
 #include <netinet/in.h>     // sockaddr_in, htons()
 #include <arpa/inet.h>      // inet_pton()
 #include <unistd.h>         // close()
+
+#include "src/Endpoint.h"
+#include "src/endpoint.h"
+#include "src/udp/udp_socket.h"
 
 constexpr uint16_t PORT = 9000;
 constexpr std::string LOCAL_IP = "127.0.0.1";
@@ -83,4 +88,31 @@ void run()
     }
 
     close(socketFd);
+}
+
+void run_test_classes()
+{
+    knet::Endpoint myEndpoint(LOCAL_IP, PORT);
+    knet::udp::UDPSocket socket = knet::udp::UDPSocket::bind(myEndpoint).value();
+
+    std::array<std::byte, BUFFER_SIZE> buffer;
+    std::println("listening at {}:{}", LOCAL_IP, PORT);
+    while (true) {
+        auto receiveResult = socket.receive_from(buffer);
+
+        if (!receiveResult) {
+            std::println("errors in receiving data");
+            continue;
+        }
+
+        if (receiveResult.value().dataSize_ == 0) {
+            continue;
+        }
+
+        std::println("received bytes from {}: ", receiveResult.value().sourceEndpoint_.get_ip_info());
+        for (std::byte b : buffer) {
+            std::print("{}", std::to_integer<char>(b));
+        }
+    }
+
 }

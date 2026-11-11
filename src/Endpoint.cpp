@@ -1,4 +1,4 @@
-#include "Endpoint.h"
+#include "endpoint.h"
 
 #include <cstdint>
 #include <expected>
@@ -12,7 +12,7 @@ namespace knet
 
     // todo: add support to ipv6 in the future
     Endpoint::Endpoint(const std::string& ip, uint16_t port)
-        : address_{}
+        : address_{}, ip_(ip), port_(port)
     {
         address_.sin_family = AF_INET;
         address_.sin_port = htons(port);
@@ -25,7 +25,9 @@ namespace knet
 
     Endpoint::Endpoint(sockaddr_in address)
         : address_(address)
-    {}
+    {
+        // todo : translate ip and port into field member for printing
+    }
 
     static std::expected<Endpoint, EndpointError>
         from(const std::string& ip, uint16_t port)
@@ -49,6 +51,11 @@ namespace knet
     {
         return address_;
     }
+
+    std::string Endpoint::get_ip_info() const
+    {
+        return std::format("{}:{}", ip_, port_);
+    };
 
 }
 

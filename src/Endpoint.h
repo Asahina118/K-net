@@ -24,7 +24,11 @@ namespace knet
 
         const sockaddr_in& native() const;
 
+        std::string get_ip_info() const;
+
     private:
         sockaddr_in address_;
+        std::string ip_;
+        uint16_t port_;
     };
 };

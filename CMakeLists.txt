@@ -10,6 +10,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(K-net
     src/main.cpp
     examples/udp_echo/server.cpp
+    src/endpoint.cpp
+    src/udp/udp_socket.cpp
+    src/detail/socket_handle.cpp
 )
 
 target_include_directories(K-net
