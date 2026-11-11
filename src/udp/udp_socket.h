@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef> // std::byte (since C++17)
+#include <expected>
 #include <span>
 
 #include "src/detail/socket_handle.h"
@@ -8,10 +9,16 @@
 
 namespace knet::udp
 {
+    enum class Error 
+    {
+        socket_creation_failed,
+        socket_binding_failed
+    };
+
     class UDPSocket
     {
     public:
-        explicit UDPSocket(Endpoint localEndpoint, detail::SocketHandle socket);
+        static std::expected<UDPSocket, udp::Error> bind(Endpoint localEndpoint);
 
         UDPSocket(const UDPSocket& other) = delete;
         UDPSocket& operator=(const UDPSocket& other) = delete;
@@ -25,9 +32,9 @@ namespace knet::udp
         );
 
     private:
-        detail::SocketHandle socket_;
+        explicit UDPSocket(Endpoint localEndpoint, detail::SocketHandle socket);
 
-        // todo : maybe this is not useful as the socket interface assigns you a port number?
+        detail::SocketHandle socket_;
         Endpoint localEndpoint_;
     };
 }
