@@ -12,7 +12,16 @@ namespace knet::udp
     enum class Error 
     {
         socket_creation_failed,
-        socket_binding_failed
+        socket_binding_failed,
+        send_to_failed,
+        data_not_fully_sent,
+        receive_from_failed,
+    };
+
+    struct UDPReceiveResult
+    {
+        Endpoint sourceEndpoint_;
+        size_t dataSize_;
     };
 
     class UDPSocket
@@ -26,10 +35,12 @@ namespace knet::udp
         UDPSocket(UDPSocket&& other) noexcept = default;
         UDPSocket& operator=(UDPSocket&& other) noexcept = default;
 
-        ssize_t send_to(
+        std::expected<size_t, udp::Error> send_to(
                 std::span<const std::byte> data,
                 const Endpoint& destination
-        );
+                );
+
+        std::expected<UDPReceiveResult, udp::Error> receive_from(std::span<std::byte> buffer);
 
     private:
         explicit UDPSocket(Endpoint localEndpoint, detail::SocketHandle socket);
