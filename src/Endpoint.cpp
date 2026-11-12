@@ -9,28 +9,21 @@
 
 namespace knet 
 {
-
-    // todo: add support to ipv6 in the future
-    Endpoint::Endpoint(const std::string& ip, uint16_t port)
-        : address_{}, ip_(ip), port_(port)
-    {
-        address_.sin_family = AF_INET;
-        address_.sin_port = htons(port);
-
-        int success = inet_pton(AF_INET, ip.c_str(), &address_.sin_addr);
-        if (success <= 0) {
-            throw std::invalid_argument(std::format("failed to construct the endpoint for the ipv4_address={}:{}", ip, port));
-        };
-    }
-
+    // constructed from correctly populated address
     Endpoint::Endpoint(sockaddr_in address)
-        : address_(address)
+        : address_(address), port_(ntohs(address.sin_port))
     {
-        // todo : translate ip and port into field member for printing
+        ip_ = std::string{};
+        ip_.resize(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &address.sin_addr, ip_.data(), ip_.size());
     }
 
-    static std::expected<Endpoint, EndpointError>
-        from(const std::string& ip, uint16_t port)
+    Endpoint::Endpoint(sockaddr_in address, std::string ip, uint16_t port)
+        : address_(address), ip_(std::move(ip)), port_(port)
+    {}
+
+    std::expected<Endpoint, EndpointError>
+        Endpoint::from(const std::string& ip, uint16_t port)
     {
         sockaddr_in address = sockaddr_in {
             .sin_family = AF_INET,
@@ -44,7 +37,7 @@ namespace knet
             return std::unexpected(EndpointError::InvalidAddress);
         }
 
-        return Endpoint(address);
+        return Endpoint(address, ip, port);
     }
 
     const sockaddr_in& Endpoint::native() const

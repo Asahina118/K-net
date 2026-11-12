@@ -63,7 +63,7 @@ namespace knet::udp
         return static_cast<size_t>(numSentBytes);
     }
 
-    std::expected<UDPReceiveResult, udp::Error>
+    std::expected<ReceivedResult, udp::Error>
         UDPSocket::receive_from(std::span<std::byte> buffer)
     {
         sockaddr_in sourceAddress {};
@@ -82,7 +82,7 @@ namespace knet::udp
         }
         Endpoint sourceEndpoint(sourceAddress);
 
-        UDPReceiveResult receiveResult = UDPReceiveResult {
+        ReceivedResult receiveResult = ReceivedResult {
             .sourceEndpoint_ = sourceEndpoint,
             .dataSize_ = static_cast<size_t>(numReceivedBytes)
         };

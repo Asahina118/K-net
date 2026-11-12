@@ -18,7 +18,7 @@ namespace knet::udp
         receive_from_failed,
     };
 
-    struct UDPReceiveResult
+    struct ReceivedResult
     {
         Endpoint sourceEndpoint_;
         size_t dataSize_;
@@ -40,7 +40,7 @@ namespace knet::udp
                 const Endpoint& destination
                 );
 
-        std::expected<UDPReceiveResult, udp::Error> receive_from(std::span<std::byte> buffer);
+        std::expected<ReceivedResult, udp::Error> receive_from(std::span<std::byte> buffer);
 
     private:
         explicit UDPSocket(Endpoint localEndpoint, detail::SocketHandle socket);

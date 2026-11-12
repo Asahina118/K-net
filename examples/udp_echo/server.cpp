@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <print>
 #include <stdexcept>
+#include <vector>
 
 #include <sys/socket.h>     // socket(), bind(), SOCK_DGRAM, AF_INET
 #include <netinet/in.h>     // sockaddr_in, htons()
@@ -92,27 +93,40 @@ void run()
 
 void run_test_classes()
 {
-    knet::Endpoint myEndpoint(LOCAL_IP, PORT);
-    knet::udp::UDPSocket socket = knet::udp::UDPSocket::bind(myEndpoint).value();
+    using namespace knet;
+    Endpoint myEndpoint = Endpoint::from(LOCAL_IP, PORT).value();
+    udp::UDPSocket socket = udp::UDPSocket::bind(myEndpoint).value();
 
     std::array<std::byte, BUFFER_SIZE> buffer;
     std::println("listening at {}:{}", LOCAL_IP, PORT);
     while (true) {
-        auto receiveResult = socket.receive_from(buffer);
-
+        std::expected<udp::ReceivedResult, udp::Error> receiveResult = socket.receive_from(buffer);
         if (!receiveResult) {
             std::println("errors in receiving data");
             continue;
         }
 
-        if (receiveResult.value().dataSize_ == 0) {
+        size_t dataSize = receiveResult->dataSize_;
+        std::string clientIp = receiveResult->sourceEndpoint_.get_ip_info();
+        if (dataSize == 0) {
             continue;
         }
 
-        std::println("received bytes from {}: ", receiveResult.value().sourceEndpoint_.get_ip_info());
-        for (std::byte b : buffer) {
-            std::print("{}", std::to_integer<char>(b));
+        std::print("[UDP] received {} bytes from ip={}, message=", dataSize, clientIp);
+        std::vector<std::byte> echoBuffer{};
+        echoBuffer.resize(dataSize);
+        for (size_t i = 0; i < dataSize; i++) {
+            const std::byte receivedByte = buffer[i];
+            echoBuffer[i] = receivedByte;
+            std::print("{}", std::to_integer<char>(receivedByte));
         }
+
+        std::expected<size_t, udp::Error> sentResult = socket.send_to(echoBuffer, receiveResult->sourceEndpoint_);
+        if (!sentResult) {
+            std::println("[UDP] echo failed to ip={}", clientIp);
+            continue;
+        }
+        std::println("[UDP] sent echo to ip={}", clientIp);
     }
 
 }
