@@ -1,10 +1,6 @@
-#include "endpoint.h"
+#include "include/knet/endpoint.h"
 
-#include <cstdint>
-#include <expected>
 #include <netinet/in.h>
-#include <string>
-#include <format>
 #include <arpa/inet.h>      // inet_pton()
 
 namespace knet 

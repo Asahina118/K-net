@@ -1,5 +1,5 @@
-#include "udp_socket.h"
-#include "src/Endpoint.h"
+#include "include/knet/udp/udp_socket.h"
+#include "include/knet/endpoint.h"
 
 #include <cstddef>
 #include <expected>
@@ -63,6 +63,9 @@ namespace knet::udp
         return static_cast<size_t>(numSentBytes);
     }
 
+    /*
+     * todo : i dont like the buffer being a out parameter, wrap it inside expected next
+     */
     std::expected<ReceivedResult, udp::Error>
         UDPSocket::receive_from(std::span<std::byte> buffer)
     {
