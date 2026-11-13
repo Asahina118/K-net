@@ -2,6 +2,7 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>      // inet_pton()
+#include <format>
 
 namespace knet 
 {

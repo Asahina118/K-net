@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <expected>
 #include <string>
 #include <array>
 #include <format>
@@ -14,9 +13,8 @@
 #include <arpa/inet.h>      // inet_pton()
 #include <unistd.h>         // close()
 
-#include "src/Endpoint.h"
-#include "src/endpoint.h"
-#include "src/udp/udp_socket.h"
+#include "include/knet/endpoint.h"
+#include "include/knet/udp/udp_socket.h"
 
 constexpr uint16_t PORT = 9000;
 constexpr std::string LOCAL_IP = "127.0.0.1";
