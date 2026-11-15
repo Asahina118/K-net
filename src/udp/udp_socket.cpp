@@ -64,7 +64,7 @@ namespace knet::udp
     }
 
     /*
-     * todo : i dont like the buffer being a out parameter, wrap it inside expected next
+     * TODO : i dont like the buffer being a out parameter, wrap it inside expected next
      */
     std::expected<ReceivedResult, udp::Error>
         UDPSocket::receive_from(std::span<std::byte> buffer)

@@ -16,6 +16,8 @@
 #include "include/knet/endpoint.h"
 #include "include/knet/udp/udp_socket.h"
 
+#include "include/knet/reliable_udp/packet.h"
+
 constexpr uint16_t PORT = 9000;
 constexpr std::string LOCAL_IP = "127.0.0.1";
 constexpr std::size_t BUFFER_SIZE = 1024;
@@ -92,6 +94,12 @@ void run()
 void run_test_classes()
 {
     using namespace knet;
+
+    std::println("start");
+    std::println("size of the packet header is {}", sizeof(reliable_udp::PacketHeader));
+    std::println("size of the packet is: {}", sizeof(reliable_udp::Packet));
+    std::println("end");
+
     Endpoint myEndpoint = Endpoint::from(LOCAL_IP, PORT).value();
     udp::UDPSocket socket = udp::UDPSocket::bind(myEndpoint).value();
 

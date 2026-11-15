@@ -12,6 +12,7 @@ add_executable(K-net
     examples/udp_echo/server.cpp
     src/endpoint.cpp
     src/udp/udp_socket.cpp
+    src/reliable_udp/packet.cpp
     src/detail/socket_handle.cpp
 )
 
