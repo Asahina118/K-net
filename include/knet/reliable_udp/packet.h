@@ -31,11 +31,21 @@ namespace knet::reliable_udp
         std::vector<std::byte> payload_;
     };
 
-    // TODO : implement
-    std::expected<std::vector<std::byte>, reliable_udp::Error>
-        serialize(const Packet& packet);
+    class Serializer
+    {
+    public:
+        explicit Serializer() = default;
 
-    // TODO : implement
-    std::expected<Packet, reliable_udp::Error>
-        deserialize(std::span<const std::byte> payload);
+        // TODO : implement
+        static std::expected<std::vector<std::byte>, reliable_udp::Error>
+            serialize(const Packet& packet);
+
+        // TODO : implement
+        static std::expected<Packet, reliable_udp::Error>
+            deserialize(std::span<const std::byte> payload);
+
+    private:
+        static constexpr size_t PACKET_SIZE = sizeof(Packet);
+    };
+
 }
