@@ -6,15 +6,13 @@
 namespace knet::reliable_udp
 {
 
+    /*
+     * maybe use the avro format in the future?
+     */
     std::expected<std::vector<std::byte>, reliable_udp::Error>
         Serializer::serialize(const Packet& packet)
     {
         using namespace knet::detail;
-        // TODO : return a std::vector<std::byte> as converted bytes
-        // 1. check the length is equal to the payload length 
-        // 2. turn everything into a byte stream (but how?)
-        // 3. this function is only responsible for serializing, no need to know what the content is
-        // this means it is protocol-agnostic
 
         std::vector<std::byte> bytes(PACKET_SIZE);
         size_t startIdx = 0;
@@ -41,18 +39,11 @@ namespace knet::reliable_udp
                 );
 
         startIdx += sizeof(packet.header_.payloadLength_);
+        for (size_t i = startIdx; i < PACKET_SIZE; i++) {
+            bytes[i] = packet.payload_[i - startIdx];
+        }
 
-        /*
-         * i need to know the type and length to do the big endian inversion tho...
-         */
-
-        // std::vector<std::byte> payload = packet.payload_;
-        //
-        // byte_utils::invert(&payload);
-        // for (size_t i = startIdx; i < PACKET_SIZE; i++) {
-        // }
-
-        return {};
+        return bytes;
     }
 
     std::expected<Packet, reliable_udp::Error>
