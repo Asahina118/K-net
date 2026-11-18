@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <print>
 #include <vector>
+#include <cstring>
 
 namespace knet::detail::byte_utils
 {
@@ -13,17 +14,39 @@ namespace knet::detail::byte_utils
         Big = 1
     };
 
-    static inline void invert(std::vector<std::byte>* bytes)
+    inline void invert(std::vector<std::byte>* bytes)
     {
         size_t n = bytes->size();
-        // n / 2 might be wrong. Need to check later
+        std::println("byte size is {}", n);
         for (size_t i = 0; i < n / 2; i++) {
-            bytes[i] = bytes[n - i];
+            std::println("inverting {} and {}", i, n - i - 1);
+            std::swap((*bytes)[i], (*bytes)[n - i - 1]);
         }
     }
 
     template<typename T>
-    static inline void
+    inline T byte_streams_to_data(Endian endian, std::vector<std::byte> bytes)
+    {
+        size_t dataLen = sizeof(T);
+        std::println("[byte_stream_to_data] bytes.size()={}, dataLen={}", bytes.size(), dataLen);
+        for (std::byte byte : bytes) {
+            std::print("{:02X}, ", static_cast<unsigned int>(byte));
+        }
+
+        T value;
+        if (endian == Endian::Little) {
+            invert(&bytes);
+            // return *reinterpret_cast<T*>(bytes.data());
+            memcpy(&value, bytes.data(), dataLen);
+            return value;
+        } else {
+            memcpy(&value, bytes.data(), dataLen);
+            return value;
+        }
+    }
+
+    template<typename T>
+    inline void
     to_bytes(T value, Endian endian, std::vector<std::byte>* bytes, size_t startIdx)
     {
         const size_t byteSize = sizeof(T);

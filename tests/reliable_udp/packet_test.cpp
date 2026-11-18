@@ -35,33 +35,50 @@ TEST_CASE("packet serializer test")
         std::print("{:02X}, ", std::to_integer<unsigned int>(byte));
     }
     std::println();
+}
 
-    // std::println("converting packetType_ to byte");
-    // std::println("\nconverting sequenceNumber_ to byte");
-    // std::println("\nconverting payloadLength_ to byte");
-    // std::println("converting packetType_ to byte");
-    // byte_utils::to_bytes(packet.header_.packetType_,
-    //         endian,
-    //         &bytes,
-    //         startIdx
-    //         );
-    //
-    // std::println("\nconverting sequenceNumber_ to byte");
-    // startIdx += sizeof(packet.header_.packetType_);
-    // byte_utils::to_bytes(packet.header_.sequenceNumber_,
-    //         endian,
-    //         &bytes,
-    //         startIdx
-    //         );
-    //
-    //
-    // std::println("\nconverting payloadLength_ to byte");
-    // startIdx += sizeof(packet.header_.sequenceNumber_);
-    // byte_utils::to_bytes(packet.header_.payloadLength_,
-    //         endian,
-    //         &bytes,
-    //         startIdx
-    //         );
+TEST_CASE("packet deserializer test")
+{
+    using namespace knet::reliable_udp::packet;
+    using namespace knet::detail::byte_utils;
+
+    Packet packetTest = Packet {
+        .header_ = PacketHeader {
+            .sequenceNumber_ = 1,
+            .payloadLength_ = 5,
+            .packetType_ = PacketType::DATA
+        },
+        .payload_ = std::vector<std::byte>(5, std::byte{0xFF})
+    };
+
+     auto result = serializer::serialize(packetTest);
+     auto resultDeserialized = serializer::deserialize(*result);
+     Packet deserializedPacket = *resultDeserialized;
+     // CHECK(packetTest == deserializedPacket);
+
+     CHECK(deserializedPacket.header_.payloadLength_ == packetTest.header_.payloadLength_);
+     CHECK(deserializedPacket.header_.sequenceNumber_ == packetTest.header_.sequenceNumber_);
+     CHECK(deserializedPacket.header_.packetType_ == packetTest.header_.packetType_);
+
+     CHECK(deserializedPacket.payload_.size() == packetTest.payload_.size());
+     for (size_t i = 0; i < deserializedPacket.payload_.size(); i++) {
+         deserializedPacket.payload_[i] == packetTest.payload_[i];
+     }
 }
 
 
+TEST_CASE("reinterpret cast playground")
+{
+    std::byte b{0xFF};
+    std::byte* bp = &b;
+    std::uint8_t casted = *reinterpret_cast<uint8_t*>(bp);
+    std::println("reinterpret_cast={}", casted);
+
+    /**
+     * example showing wrong casting, this will not produce the wanted output
+     * because of aligning problem
+     */
+    std::vector<std::byte> byteVec{b, b};
+    std::uint16_t casted_16 = *reinterpret_cast<uint16_t*>(byteVec.data());
+    std::println("reinterpret_cast uint16_t={}", casted_16);
+}

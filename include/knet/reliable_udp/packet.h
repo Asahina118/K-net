@@ -15,8 +15,11 @@ namespace knet::reliable_udp::packet
         DATA = 0,
         ACK,
         SYN,
-        FIN
+        FIN,
+        UNKNOWN
     };
+
+    PacketType parse_packet_type_from_byte(const std::byte byte);
 
     struct PacketHeader // 8 bytes after padding
     {
@@ -31,8 +34,9 @@ namespace knet::reliable_udp::packet
         std::vector<std::byte> payload_;
     };
 
-    static inline size_t PACKET_HEADER_SIZE = sizeof(PacketHeader);
-    static inline size_t PACKET_HEADER_SIZE_NO_PADDING = sizeof(PacketHeader) - 1;
+    constexpr inline size_t PACKET_HEADER_SIZE = sizeof(PacketHeader);
+    constexpr inline size_t PACKET_HEADER_SIZE_NO_PADDING = sizeof(PacketHeader) - 1;
+
 
     namespace serializer
     {
@@ -42,6 +46,20 @@ namespace knet::reliable_udp::packet
         // TODO : implement
         std::expected<Packet, reliable_udp::Error>
             deserialize(std::span<const std::byte> payload);
+
+
+        // protocol :
+        // packetType : 1 byte
+        // sequenceNumber : 4 byte
+        // payloadLength : 3 byte
+        // payload: value of payloadLength
+        constexpr inline size_t PACKET_PACKET_TYPE_OFFSET = 0;
+        constexpr inline size_t PACKET_SEQUENCE_NUMBER_OFFSET = PACKET_PACKET_TYPE_OFFSET + sizeof(PacketType);
+        constexpr inline size_t PACKET_PAYLOAD_LENGTH_OFFSET = sizeof(PacketHeader::sequenceNumber_) + PACKET_SEQUENCE_NUMBER_OFFSET;
+
+        constexpr inline size_t PACKET_PAYLOAD_OFFSET = PACKET_HEADER_SIZE_NO_PADDING;
     }
+
+
 
 }

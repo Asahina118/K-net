@@ -5,6 +5,17 @@
 
 namespace knet::reliable_udp::packet
 {
+    PacketType parse_packet_type_from_byte(const std::byte byte)
+    {
+        std::uint8_t unsignedByte = static_cast<std::uint8_t>(byte);
+        switch (unsignedByte) {
+            case 0 : return PacketType::DATA;
+            case 1 : return PacketType::ACK;
+            case 2 : return PacketType::SYN;
+            case 3 : return PacketType::FIN;
+            default : return PacketType::UNKNOWN;
+        }
+    }
 
     /*
      * maybe use the avro format in the future?
@@ -15,9 +26,6 @@ namespace knet::reliable_udp::packet
         using namespace knet::detail;
 
         const size_t BYTE_SIZE = PACKET_HEADER_SIZE_NO_PADDING + packet.header_.payloadLength_;
-        std::println("payloadLength_={}", packet.header_.payloadLength_);
-        std::println("sizeof(PacketHeader)={}", PACKET_HEADER_SIZE_NO_PADDING);
-        std::println("BYTE_SIZE={}", BYTE_SIZE);
         std::vector<std::byte> bytes(BYTE_SIZE);
         size_t startIdx = 0;
         auto endian = byte_utils::Endian::Big;
@@ -55,19 +63,47 @@ namespace knet::reliable_udp::packet
     std::expected<Packet, reliable_udp::Error>
         serializer::deserialize(std::span<const std::byte> payload)
     {
-        // TODO:: need to consider the truncated sceanario
-        // 1. the length is currently fixed, the first 7 bytes followed by the payload, truncated size depends on the buffer size of the recvmsg api
-        //
+        using namespace knet::detail;
 
-        /* use case for (reliable udp implementation?): 
-         *
-         * ReceivedResult result = recvmsg(endpoint);
-         * log("received " + result.buffer_ + " raw bytes");
-         * Packet packet = deserialize(result->buffer_);
-         * if (packet) {
-         *   reliable mechanisms: keep track of the sequence number (in where? in the UDPSocket?)
-         * }
-         */
-        return {};
+        auto endian = byte_utils::Endian::Little;
+
+        auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
+        std::uint32_t sequenceNumber = byte_streams_to_data<std::uint32_t>(
+                endian, 
+                std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::sequenceNumber_))
+                );
+
+        auto payloadLengthOffsetIt = payload.begin() + PACKET_PAYLOAD_LENGTH_OFFSET;
+        std::uint16_t payloadLength = byte_streams_to_data<std::uint16_t>(
+                endian,
+                std::vector<std::byte>(payloadLengthOffsetIt, payloadLengthOffsetIt + sizeof(PacketHeader::payloadLength_))
+                );
+
+        // 1 byte enum: size is very unlikely to change. Safe to hardcode
+        PacketType packetType = parse_packet_type_from_byte(payload[PACKET_PACKET_TYPE_OFFSET]);
+
+        std::vector<std::byte> bytes(payloadLength);
+        for (size_t i = 0; i < payloadLength; i++) {
+            bytes[i] = payload[PACKET_PAYLOAD_OFFSET + i];
+        }
+
+        return Packet {
+            .header_ = PacketHeader {
+                .sequenceNumber_ = sequenceNumber,
+                .payloadLength_ = payloadLength,
+                .packetType_ = packetType
+            },
+            .payload_ = bytes
+        };
     }
 }
+
+/* use case for (reliable udp implementation?): 
+    *
+    * ReceivedResult result = recvmsg(endpoint);
+    * log("received " + result.buffer_ + " raw bytes");
+    * Packet packet = deserialize(result->buffer_);
+    * if (packet) {
+    *   reliable mechanisms: keep track of the sequence number (in where? in the UDPSocket?)
+    * }
+    */
