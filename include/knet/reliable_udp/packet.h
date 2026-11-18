@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <expected>
-
+#include <limits>
 #include <span>
 #include <vector>
 
@@ -38,6 +38,9 @@ namespace knet::reliable_udp::packet
 
     constexpr inline size_t PACKET_HEADER_SIZE = sizeof(PacketHeader);
     constexpr inline size_t PACKET_HEADER_SIZE_NO_PADDING = sizeof(PacketHeader) - 1;
+
+    constexpr inline auto MAX_SEQUENCE_NUMBER = std::numeric_limits<decltype(PacketHeader::sequenceNumber_)>::max();
+    constexpr inline auto MAX_SEQUENCE_PAYLOAD_LENGTH = std::numeric_limits<decltype(PacketHeader::payloadLength_)>::max();
 
 
     namespace serializer

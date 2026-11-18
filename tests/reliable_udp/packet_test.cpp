@@ -1,21 +1,24 @@
 #include <cstddef>
+#include <expected>
+#include <limits>
 #include <print>
+#include <stdexcept>
 
+#include "include/knet/reliable_udp/error.h"
 #include "tests/extern/doctest.h"
 #include "include/knet/reliable_udp/packet.h"
 #include "src/detail/utils/byte_utils.h"
 
-void test_serialize_and_deserialize(knet::reliable_udp::packet::Packet& packet)
+std::expected<void, knet::reliable_udp::Error> test_serialize_and_deserialize(knet::reliable_udp::packet::Packet& packet)
 {
     using namespace knet::reliable_udp::packet;
 
     auto serializedResult = serializer::serialize(packet);
-    REQUIRE(serializedResult.has_value());
+    if (!serializedResult) return std::unexpected(serializedResult.error());
 
     auto deserializedResult = serializer::deserialize(*serializedResult);
-    REQUIRE(deserializedResult.has_value());
+    if (!deserializedResult) return std::unexpected(deserializedResult.error());
 
-    // CHECK_EQ(*deserializedResult, packet);
     Packet deserializedPacket = *deserializedResult;
 
     auto deserializedPacketType = static_cast<std::uint8_t>(deserializedPacket.header_.packetType_);
@@ -35,6 +38,8 @@ void test_serialize_and_deserialize(knet::reliable_udp::packet::Packet& packet)
 
     std::vector<std::byte> originalPayload(packet.payload_.begin(), packet.payload_.begin() + packet.header_.payloadLength_);
     CHECK_EQ(deserializedPacketPayload, originalPayload);
+
+    return {};
 }
 
 TEST_CASE("packet serializer test")
@@ -42,7 +47,7 @@ TEST_CASE("packet serializer test")
     using namespace knet::reliable_udp::packet;
     using namespace knet::detail::byte_utils;
 
-    Packet packetTest = Packet {
+    Packet packetHappyFlow = Packet {
         .header_ = PacketHeader {
             .sequenceNumber_ = 1,
             .payloadLength_ = 5,
@@ -50,10 +55,9 @@ TEST_CASE("packet serializer test")
         },
         .payload_ = std::vector<std::byte>(5, std::byte{0xFF})
     };
+    CHECK(test_serialize_and_deserialize(packetHappyFlow).has_value());
 
-    test_serialize_and_deserialize(packetTest);
-
-    packetTest = Packet {
+    auto packetZeroPayloadLen = Packet {
         .header_ = PacketHeader {
             .sequenceNumber_ = 6888,
             .payloadLength_ = 0,
@@ -61,9 +65,27 @@ TEST_CASE("packet serializer test")
         },
         .payload_ = std::vector<std::byte>(944, std::byte{0xFF})
     };
+    CHECK(test_serialize_and_deserialize(packetZeroPayloadLen).has_value());
 
-    test_serialize_and_deserialize(packetTest);
+    auto packetHeaderLenTooLong = Packet {
+        .header_ = PacketHeader {
+            .sequenceNumber_ = std::numeric_limits<decltype(PacketHeader::sequenceNumber_)>::max(),
+            .payloadLength_ = std::numeric_limits<decltype(PacketHeader::payloadLength_)>::max(),
+            .packetType_ = PacketType::FIN
+        },
+        .payload_ = std::vector<std::byte>(944, std::byte{0xFF})
+    };
+    CHECK(!test_serialize_and_deserialize(packetHeaderLenTooLong).has_value());
 
+    auto packetMaxValue = Packet {
+        .header_ = PacketHeader {
+            .sequenceNumber_ = MAX_SEQUENCE_NUMBER,
+            .payloadLength_ = MAX_SEQUENCE_PAYLOAD_LENGTH,
+            .packetType_ = PacketType::FIN
+        },
+        .payload_ = std::vector<std::byte>(MAX_SEQUENCE_PAYLOAD_LENGTH, std::byte{0xFF})
+    };
+    CHECK(test_serialize_and_deserialize(packetMaxValue).has_value());
 }
 
 TEST_CASE("packet deserializer test")
