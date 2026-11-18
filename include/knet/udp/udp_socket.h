@@ -3,6 +3,7 @@
 #include <cstddef> // std::byte (since C++17)
 #include <expected>
 #include <span>
+#include <vector>
 
 #include "src/detail/socket_handle.h"
 #include "include/knet/endpoint.h"

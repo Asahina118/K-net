@@ -17,9 +17,6 @@ namespace knet::reliable_udp::packet
         }
     }
 
-    /*
-     * maybe use the avro format in the future?
-     */
     std::expected<std::vector<std::byte>, reliable_udp::Error>
         serializer::serialize(const Packet& packet)
     {
@@ -65,6 +62,7 @@ namespace knet::reliable_udp::packet
     {
         using namespace knet::detail;
 
+        // to be specific this is from big endian to little endian. Only do inverting when they are XOR
         auto endian = byte_utils::Endian::Little;
 
         auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
