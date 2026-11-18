@@ -8,7 +8,7 @@
 
 #include "include/knet/reliable_udp/error.h"
 
-namespace knet::reliable_udp
+namespace knet::reliable_udp::packet
 {
     enum class PacketType : std::uint8_t
     {
@@ -20,9 +20,9 @@ namespace knet::reliable_udp
 
     struct PacketHeader // 8 bytes after padding
     {
+        PacketType packetType_;
         std::uint32_t sequenceNumber_;
         std::uint16_t payloadLength_;
-        PacketType packetType_;
     };
 
     struct Packet
@@ -31,21 +31,17 @@ namespace knet::reliable_udp
         std::vector<std::byte> payload_;
     };
 
-    class Serializer
-    {
-    public:
-        explicit Serializer() = default;
+    static inline size_t PACKET_SIZE = sizeof(Packet);
 
+    namespace serializer
+    {
         // TODO : implement
-        static std::expected<std::vector<std::byte>, reliable_udp::Error>
+        std::expected<std::vector<std::byte>, reliable_udp::Error>
             serialize(const Packet& packet);
 
         // TODO : implement
-        static std::expected<Packet, reliable_udp::Error>
+        std::expected<Packet, reliable_udp::Error>
             deserialize(std::span<const std::byte> payload);
-
-    private:
-        static constexpr size_t PACKET_SIZE = sizeof(Packet);
-    };
+    }
 
 }

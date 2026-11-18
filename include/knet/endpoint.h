@@ -6,6 +6,7 @@
 
 namespace knet
 {
+    // TODO : unify the style, maybe go for snake_case instead
     enum class EndpointError 
     {
         InvalidAddress,

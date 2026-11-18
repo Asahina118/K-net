@@ -1,7 +1,7 @@
 // =============================================================
 // == DO NOT MODIFY THIS FILE BY HAND - IT IS AUTO GENERATED! ==
 // =============================================================
-//
+
 // doctest.h - the lightest feature-rich C++ single-header testing framework for unit tests and TDD
 //
 // Copyright (c) 2016-2023 Viktor Kirilov

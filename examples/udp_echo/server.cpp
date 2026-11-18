@@ -95,11 +95,6 @@ void run_test_classes()
 {
     using namespace knet;
 
-    std::println("start");
-    std::println("size of the packet header is {}", sizeof(reliable_udp::PacketHeader));
-    std::println("size of the packet is: {}", sizeof(reliable_udp::Packet));
-    std::println("end");
-
     Endpoint myEndpoint = Endpoint::from(LOCAL_IP, PORT).value();
     udp::UDPSocket socket = udp::UDPSocket::bind(myEndpoint).value();
 

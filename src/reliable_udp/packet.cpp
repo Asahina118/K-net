@@ -1,35 +1,37 @@
 #include "include/knet/reliable_udp/packet.h"
 
-#include "src/detail/byte_utils.h"
+#include "src/detail/utils/byte_utils.h"
 #include <cstddef>
 
-namespace knet::reliable_udp
+namespace knet::reliable_udp::packet
 {
 
     /*
      * maybe use the avro format in the future?
      */
     std::expected<std::vector<std::byte>, reliable_udp::Error>
-        Serializer::serialize(const Packet& packet)
+        serializer::serialize(const Packet& packet)
     {
         using namespace knet::detail;
 
         std::vector<std::byte> bytes(PACKET_SIZE);
         size_t startIdx = 0;
-        auto endian = byte_utils::Endian::BIG_ENDIAN;
+        auto endian = byte_utils::Endian::Big;
 
-        byte_utils::to_bytes(packet.header_.sequenceNumber_,
+
+        byte_utils::to_bytes(packet.header_.packetType_,
                 endian,
                 &bytes,
                 startIdx
                 );
 
         startIdx += sizeof(packet.header_.packetType_);
-        byte_utils::to_bytes(packet.header_.packetType_,
+        byte_utils::to_bytes(packet.header_.sequenceNumber_,
                 endian,
                 &bytes,
                 startIdx
                 );
+
 
         startIdx += sizeof(packet.header_.sequenceNumber_);
         byte_utils::to_bytes(packet.header_.payloadLength_,
@@ -39,7 +41,7 @@ namespace knet::reliable_udp
                 );
 
         startIdx += sizeof(packet.header_.payloadLength_);
-        for (size_t i = startIdx; i < PACKET_SIZE; i++) {
+        for (size_t i = startIdx; i < packet.header_.payloadLength_; i++) {
             bytes[i] = packet.payload_[i - startIdx];
         }
 
@@ -47,7 +49,7 @@ namespace knet::reliable_udp
     }
 
     std::expected<Packet, reliable_udp::Error>
-        Serializer::deserialize(std::span<const std::byte> payload)
+        serializer::deserialize(std::span<const std::byte> payload)
     {
         // TODO:: need to consider the truncated sceanario
         // 1. the length is currently fixed, the first 7 bytes followed by the payload, truncated size depends on the buffer size of the recvmsg api
