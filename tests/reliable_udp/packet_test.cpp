@@ -12,9 +12,9 @@ TEST_CASE("packet serializer test")
 
     Packet packetTest = Packet {
         .header_ = PacketHeader {
-            .packetType_ = PacketType::DATA,
             .sequenceNumber_ = 1,
-            .payloadLength_ = 5
+            .payloadLength_ = 5,
+            .packetType_ = PacketType::DATA
         },
         .payload_ = std::vector<std::byte>(5, std::byte{0xFF})
     };
@@ -25,6 +25,7 @@ TEST_CASE("packet serializer test")
 
 
     auto result = serializer::serialize(packetTest);
+
     if (!result) {
         std::println("error occurred when serializing");
     }

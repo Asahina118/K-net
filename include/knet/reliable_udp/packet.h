@@ -20,9 +20,9 @@ namespace knet::reliable_udp::packet
 
     struct PacketHeader // 8 bytes after padding
     {
-        PacketType packetType_;
         std::uint32_t sequenceNumber_;
         std::uint16_t payloadLength_;
+        PacketType packetType_;
     };
 
     struct Packet
@@ -31,11 +31,11 @@ namespace knet::reliable_udp::packet
         std::vector<std::byte> payload_;
     };
 
-    static inline size_t PACKET_SIZE = sizeof(Packet);
+    static inline size_t PACKET_HEADER_SIZE = sizeof(PacketHeader);
+    static inline size_t PACKET_HEADER_SIZE_NO_PADDING = sizeof(PacketHeader) - 1;
 
     namespace serializer
     {
-        // TODO : implement
         std::expected<std::vector<std::byte>, reliable_udp::Error>
             serialize(const Packet& packet);
 

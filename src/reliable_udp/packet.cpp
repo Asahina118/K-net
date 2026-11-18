@@ -14,7 +14,11 @@ namespace knet::reliable_udp::packet
     {
         using namespace knet::detail;
 
-        std::vector<std::byte> bytes(PACKET_SIZE);
+        const size_t BYTE_SIZE = PACKET_HEADER_SIZE_NO_PADDING + packet.header_.payloadLength_;
+        std::println("payloadLength_={}", packet.header_.payloadLength_);
+        std::println("sizeof(PacketHeader)={}", PACKET_HEADER_SIZE_NO_PADDING);
+        std::println("BYTE_SIZE={}", BYTE_SIZE);
+        std::vector<std::byte> bytes(BYTE_SIZE);
         size_t startIdx = 0;
         auto endian = byte_utils::Endian::Big;
 
@@ -41,7 +45,7 @@ namespace knet::reliable_udp::packet
                 );
 
         startIdx += sizeof(packet.header_.payloadLength_);
-        for (size_t i = startIdx; i < packet.header_.payloadLength_; i++) {
+        for (size_t i = startIdx; i < startIdx + packet.header_.payloadLength_; i++) {
             bytes[i] = packet.payload_[i - startIdx];
         }
 
