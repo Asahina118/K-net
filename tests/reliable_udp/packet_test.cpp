@@ -5,6 +5,38 @@
 #include "include/knet/reliable_udp/packet.h"
 #include "src/detail/utils/byte_utils.h"
 
+void test_serialize_and_deserialize(knet::reliable_udp::packet::Packet& packet)
+{
+    using namespace knet::reliable_udp::packet;
+
+    auto serializedResult = serializer::serialize(packet);
+    REQUIRE(serializedResult.has_value());
+
+    auto deserializedResult = serializer::deserialize(*serializedResult);
+    REQUIRE(deserializedResult.has_value());
+
+    // CHECK_EQ(*deserializedResult, packet);
+    Packet deserializedPacket = *deserializedResult;
+
+    auto deserializedPacketType = static_cast<std::uint8_t>(deserializedPacket.header_.packetType_);
+    auto deserializedPayloadLength = deserializedPacket.header_.payloadLength_;
+    auto deserializedSequenceNumber = deserializedPacket.header_.sequenceNumber_;
+    auto deserializedPacketPayload = deserializedPacket.payload_;
+
+    std::println("[packet comparison] checking deserialized packet against original packet");
+    std::println("packet type: {} , {}", deserializedPacketType, static_cast<std::uint8_t>(packet.header_.packetType_));
+    CHECK_EQ(deserializedPacketType, static_cast<std::uint8_t>(packet.header_.packetType_));
+
+    std::println("payload length: {} , {}", deserializedPayloadLength, packet.header_.payloadLength_);
+    CHECK_EQ(deserializedPayloadLength, packet.header_.payloadLength_);
+
+    std::println("sequence number: {} , {}", deserializedSequenceNumber, packet.header_.sequenceNumber_);
+    CHECK_EQ(deserializedSequenceNumber, packet.header_.sequenceNumber_);
+
+    std::vector<std::byte> originalPayload(packet.payload_.begin(), packet.payload_.begin() + packet.header_.payloadLength_);
+    CHECK_EQ(deserializedPacketPayload, originalPayload);
+}
+
 TEST_CASE("packet serializer test")
 {
     using namespace knet::reliable_udp::packet;
@@ -19,22 +51,19 @@ TEST_CASE("packet serializer test")
         .payload_ = std::vector<std::byte>(5, std::byte{0xFF})
     };
 
-    std::println("sequenceNumber_ in byte={:02X}", packetTest.header_.sequenceNumber_);
-    std::println("payloadLength_ in byte={:02X}", packetTest.header_.payloadLength_);
-    std::println("packetType_ in byte={:02X}", static_cast<unsigned int>(packetTest.header_.packetType_));
+    test_serialize_and_deserialize(packetTest);
 
+    packetTest = Packet {
+        .header_ = PacketHeader {
+            .sequenceNumber_ = 6888,
+            .payloadLength_ = 0,
+            .packetType_ = PacketType::ACK
+        },
+        .payload_ = std::vector<std::byte>(944, std::byte{0xFF})
+    };
 
-    auto result = serializer::serialize(packetTest);
+    test_serialize_and_deserialize(packetTest);
 
-    if (!result) {
-        std::println("error occurred when serializing");
-    }
-    
-    std::println("serialization success!");
-    for (const std::byte byte : *result) {
-        std::print("{:02X}, ", std::to_integer<unsigned int>(byte));
-    }
-    std::println();
 }
 
 TEST_CASE("packet deserializer test")

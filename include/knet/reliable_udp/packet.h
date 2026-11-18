@@ -26,12 +26,14 @@ namespace knet::reliable_udp::packet
         std::uint32_t sequenceNumber_;
         std::uint16_t payloadLength_;
         PacketType packetType_;
+        bool operator==(const PacketHeader& other) const = default;
     };
 
     struct Packet
     {
         PacketHeader header_;
         std::vector<std::byte> payload_;
+        bool operator==(const Packet& other) const = default;
     };
 
     constexpr inline size_t PACKET_HEADER_SIZE = sizeof(PacketHeader);

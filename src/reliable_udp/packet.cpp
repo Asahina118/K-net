@@ -2,6 +2,7 @@
 
 #include "src/detail/utils/byte_utils.h"
 #include <cstddef>
+#include <limits>
 
 namespace knet::reliable_udp::packet
 {
@@ -17,6 +18,9 @@ namespace knet::reliable_udp::packet
         }
     }
 
+    constexpr inline auto SEQUENCE_NUMBER_MAX = std::numeric_limits<decltype(PacketHeader::sequenceNumber_)>::max();
+    constexpr inline auto SEQUENCE_PAYLOAD_LENGTH_MAX = std::numeric_limits<decltype(PacketHeader::payloadLength_)>::max();
+
     std::expected<std::vector<std::byte>, reliable_udp::Error>
         serializer::serialize(const Packet& packet)
     {
@@ -28,12 +32,13 @@ namespace knet::reliable_udp::packet
         auto endian = byte_utils::Endian::Big;
 
 
-        byte_utils::to_bytes(packet.header_.packetType_,
+        byte_utils::to_bytes(static_cast<uint8_t>(packet.header_.packetType_),
                 endian,
                 &bytes,
                 startIdx
                 );
 
+        // std::println("[serialize] sequence number={}", packet.header_.sequenceNumber_);
         startIdx += sizeof(packet.header_.packetType_);
         byte_utils::to_bytes(packet.header_.sequenceNumber_,
                 endian,
@@ -54,6 +59,11 @@ namespace knet::reliable_udp::packet
             bytes[i] = packet.payload_[i - startIdx];
         }
 
+        std::print("[serialize] serialized bytes: (");
+        for (std::byte byte : bytes) {
+            std::print("{:02X}, ", static_cast<std::uint8_t>(byte));
+        }
+        std::println(")");
         return bytes;
     }
 
@@ -61,6 +71,12 @@ namespace knet::reliable_udp::packet
         serializer::deserialize(std::span<const std::byte> payload)
     {
         using namespace knet::detail;
+
+        std::print("[deserialize] received payload: (");
+        for (std::byte byte : payload) {
+            std::print("{:02X}, ", static_cast<std::uint8_t>(byte));
+        }
+        std::println(")");
 
         // to be specific this is from big endian to little endian. Only do inverting when they are XOR
         auto endian = byte_utils::Endian::Little;
