@@ -42,7 +42,7 @@ std::expected<void, knet::reliable_udp::Error> test_serialize_and_deserialize(kn
     return {};
 }
 
-TEST_CASE("packet serializer test")
+TEST_CASE("packet serialization test")
 {
     using namespace knet::reliable_udp::packet;
     using namespace knet::detail::byte_utils;
@@ -88,48 +88,45 @@ TEST_CASE("packet serializer test")
     CHECK(test_serialize_and_deserialize(packetMaxValue).has_value());
 }
 
-TEST_CASE("packet deserializer test")
+std::expected<knet::reliable_udp::packet::Packet, knet::reliable_udp::Error>
+receive_from(std::span<const std::byte> buffer, ssize_t recv_from_return_value)
 {
-    using namespace knet::reliable_udp::packet;
-    using namespace knet::detail::byte_utils;
+    using namespace knet::reliable_udp;
 
-    Packet packetTest = Packet {
-        .header_ = PacketHeader {
-            .sequenceNumber_ = 1,
-            .payloadLength_ = 5,
-            .packetType_ = PacketType::DATA
-        },
-        .payload_ = std::vector<std::byte>(5, std::byte{0xFF})
-    };
+    if (recv_from_return_value == -1) {
+        return std::unexpected(Error::socket_receive_failed);
+    }
 
-     auto result = serializer::serialize(packetTest);
-     auto resultDeserialized = serializer::deserialize(*result);
-     Packet deserializedPacket = *resultDeserialized;
-     // CHECK(packetTest == deserializedPacket);
+    if (recv_from_return_value < packet::PACKET_HEADER_SIZE_NO_PADDING) {
+        return std::unexpected(Error::socket_received_less_byte_than_header_size);
+    }
 
-     CHECK(deserializedPacket.header_.payloadLength_ == packetTest.header_.payloadLength_);
-     CHECK(deserializedPacket.header_.sequenceNumber_ == packetTest.header_.sequenceNumber_);
-     CHECK(deserializedPacket.header_.packetType_ == packetTest.header_.packetType_);
-
-     CHECK(deserializedPacket.payload_.size() == packetTest.payload_.size());
-     for (size_t i = 0; i < deserializedPacket.payload_.size(); i++) {
-         deserializedPacket.payload_[i] == packetTest.payload_[i];
-     }
+    return packet::serializer::deserialize(buffer);
 }
 
-
-TEST_CASE("reinterpret cast playground")
+TEST_CASE("receive packet")
 {
-    std::byte b{0xFF};
-    std::byte* bp = &b;
-    std::uint8_t casted = *reinterpret_cast<uint8_t*>(bp);
-    std::println("reinterpret_cast={}", casted);
+    using namespace knet::reliable_udp::packet;
 
-    /**
-     * example showing wrong casting, this will not produce the wanted output
-     * because of aligning problem
-     */
-    std::vector<std::byte> byteVec{b, b};
-    std::uint16_t casted_16 = *reinterpret_cast<uint16_t*>(byteVec.data());
-    std::println("reinterpret_cast uint16_t={}", casted_16);
+    std::array<std::byte, 512> recvBuffer;
+    recvBuffer.fill(std::byte(0xFF));
+    ssize_t mock_recv_from_return_value = -1;
+
+    // note : std::expected can be compared to std::unexpected becasue the bool operator==(const std::unexpected&) is well defined in the implementation
+    CHECK_EQ(
+            receive_from(recvBuffer, mock_recv_from_return_value), 
+            std::unexpected(knet::reliable_udp::Error::socket_receive_failed)
+            );
+
+    mock_recv_from_return_value = 5;
+    CHECK_EQ(
+            receive_from(recvBuffer, mock_recv_from_return_value), 
+            std::unexpected(knet::reliable_udp::Error::socket_received_less_byte_than_header_size)
+            );
+
+    mock_recv_from_return_value = 7;
+    CHECK_EQ(
+            receive_from(recvBuffer, mock_recv_from_return_value),
+            std::expected(serializer::deserialize(recvBuffer))
+            );
 }

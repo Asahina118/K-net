@@ -1,5 +1,6 @@
 #include "include/knet/reliable_udp/packet.h"
 
+#include "include/knet/reliable_udp/error.h"
 #include "src/detail/utils/byte_utils.h"
 #include <cstddef>
 #include <expected>
@@ -24,7 +25,7 @@ namespace knet::reliable_udp::packet
         using namespace knet::detail;
 
         if (packet.payload_.size() < packet.header_.payloadLength_) {
-            return std::unexpected(reliable_udp::Error::header_len_bigger_than_actual_payload_len);
+            return std::unexpected(reliable_udp::Error::serializer_header_len_bigger_than_actual_payload_len);
         }
 
         const size_t BYTE_SIZE = PACKET_HEADER_SIZE_NO_PADDING + packet.header_.payloadLength_;
@@ -72,6 +73,10 @@ namespace knet::reliable_udp::packet
     {
         using namespace knet::detail;
 
+        if (payload.size() < PACKET_HEADER_SIZE_NO_PADDING) {
+            return std::unexpected(reliable_udp::Error::deserializer_not_enough_byte_to_parse_header);
+        }
+
         std::print("[deserialize] received payload: (");
         for (std::byte byte : payload) {
             std::print("{:02X}, ", static_cast<std::uint8_t>(byte));
@@ -82,16 +87,19 @@ namespace knet::reliable_udp::packet
         // TODO : to be done in the future
         auto endian = byte_utils::Endian::Little;
 
-        auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
-        std::uint32_t sequenceNumber = byte_streams_to_data<std::uint32_t>(
-                endian, 
-                std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::sequenceNumber_))
-                );
-
         auto payloadLengthOffsetIt = payload.begin() + PACKET_PAYLOAD_LENGTH_OFFSET;
         std::uint16_t payloadLength = byte_streams_to_data<std::uint16_t>(
                 endian,
                 std::vector<std::byte>(payloadLengthOffsetIt, payloadLengthOffsetIt + sizeof(PacketHeader::payloadLength_))
+                );
+        if (payload.size() - PACKET_HEADER_SIZE_NO_PADDING != payloadLength) {
+            return std::unexpected(reliable_udp::Error::deserializer_payload_len_does_not_match_header_parsed_len);
+        }
+
+        auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
+        std::uint32_t sequenceNumber = byte_streams_to_data<std::uint32_t>(
+                endian, 
+                std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::sequenceNumber_))
                 );
 
         // 1 byte enum: size is very unlikely to change. Safe to hardcode
