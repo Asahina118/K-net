@@ -3,7 +3,6 @@
 #include "src/detail/utils/byte_utils.h"
 #include <cstddef>
 #include <expected>
-#include <limits>
 
 namespace knet::reliable_udp::packet
 {
@@ -80,6 +79,7 @@ namespace knet::reliable_udp::packet
         std::println(")");
 
         // to be specific this is from big endian to little endian. Only do inverting when they are XOR
+        // TODO : to be done in the future
         auto endian = byte_utils::Endian::Little;
 
         auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
