@@ -13,17 +13,17 @@ std::expected<void, knet::reliable_udp::Error> test_serialize_and_deserialize(kn
 {
     using namespace knet::reliable_udp::packet;
 
-    auto serializedResult = serializer::serialize(packet);
+    auto serializedResult = serializer::serialize_header(packet);
     if (!serializedResult) return std::unexpected(serializedResult.error());
 
-    auto deserializedResult = serializer::deserialize(*serializedResult);
+    auto deserializedResult = serializer::deserialize_header(*serializedResult);
     if (!deserializedResult) return std::unexpected(deserializedResult.error());
 
     Packet deserializedPacket = *deserializedResult;
 
     auto deserializedPacketType = static_cast<std::uint8_t>(deserializedPacket.header_.packetType_);
     auto deserializedPayloadLength = deserializedPacket.header_.payloadLength_;
-    auto deserializedSequenceNumber = deserializedPacket.header_.sequenceNumber_;
+    auto deserializedSequenceNumber = deserializedPacket.header_.seqNum_;
     auto deserializedPacketPayload = deserializedPacket.payload_;
 
     std::println("[packet comparison] checking deserialized packet against original packet");
@@ -33,8 +33,8 @@ std::expected<void, knet::reliable_udp::Error> test_serialize_and_deserialize(kn
     std::println("payload length: {} , {}", deserializedPayloadLength, packet.header_.payloadLength_);
     CHECK_EQ(deserializedPayloadLength, packet.header_.payloadLength_);
 
-    std::println("sequence number: {} , {}", deserializedSequenceNumber, packet.header_.sequenceNumber_);
-    CHECK_EQ(deserializedSequenceNumber, packet.header_.sequenceNumber_);
+    std::println("sequence number: {} , {}", deserializedSequenceNumber, packet.header_.seqNum_);
+    CHECK_EQ(deserializedSequenceNumber, packet.header_.seqNum_);
 
     std::vector<std::byte> originalPayload(packet.payload_.begin(), packet.payload_.begin() + packet.header_.payloadLength_);
     CHECK_EQ(deserializedPacketPayload, originalPayload);
@@ -49,7 +49,7 @@ TEST_CASE("packet serialization test")
 
     Packet packetHappyFlow = Packet {
         .header_ = PacketHeader {
-            .sequenceNumber_ = 1,
+            .seqNum_ = 1,
             .payloadLength_ = 5,
             .packetType_ = PacketType::DATA
         },
@@ -59,7 +59,7 @@ TEST_CASE("packet serialization test")
 
     auto packetZeroPayloadLen = Packet {
         .header_ = PacketHeader {
-            .sequenceNumber_ = 6888,
+            .seqNum_ = 6888,
             .payloadLength_ = 0,
             .packetType_ = PacketType::ACK
         },
@@ -69,7 +69,7 @@ TEST_CASE("packet serialization test")
 
     auto packetHeaderLenTooLong = Packet {
         .header_ = PacketHeader {
-            .sequenceNumber_ = std::numeric_limits<decltype(PacketHeader::sequenceNumber_)>::max(),
+            .seqNum_ = std::numeric_limits<decltype(PacketHeader::seqNum_)>::max(),
             .payloadLength_ = std::numeric_limits<decltype(PacketHeader::payloadLength_)>::max(),
             .packetType_ = PacketType::FIN
         },
@@ -79,7 +79,7 @@ TEST_CASE("packet serialization test")
 
     auto packetMaxValue = Packet {
         .header_ = PacketHeader {
-            .sequenceNumber_ = MAX_SEQUENCE_NUMBER,
+            .seqNum_ = MAX_SEQUENCE_NUMBER,
             .payloadLength_ = MAX_SEQUENCE_PAYLOAD_LENGTH,
             .packetType_ = PacketType::FIN
         },
@@ -103,7 +103,7 @@ receive_from(std::span<const std::byte> buffer, ssize_t recv_from_return_value)
 
     std::span<const std::byte> toBeDeserialized(buffer.begin(), buffer.begin() + recv_from_return_value);
 
-    return packet::serializer::deserialize(toBeDeserialized);
+    return packet::serializer::deserialize_header(toBeDeserialized);
 }
 
 TEST_CASE("receive packet")

@@ -2,6 +2,8 @@
 
 #include "include/knet/udp/udp_socket.h"
 
+#include <cstdint>
+
 namespace knet::reliable_udp
 {
     enum class Error 
@@ -36,10 +38,21 @@ namespace knet::reliable_udp
                 const Endpoint& destination
                 );
 
-        std::expected<ReceivedResult, udp::Error> receive_from(std::span<std::byte> buffer);
+        std::expected<ReceivedResult, reliable_udp::Error> receive(std::span<std::byte> buffer);
+
+        Endpoint get_local_endpoint() const;
+        Endpoint get_source_endpoint() const;
 
     private:
         explicit ReliableUDPSocket(udp::UDPSocket udpSocket);
-        udp::UDPSocket udpSocket;
+        udp::UDPSocket udpSocket_;
+        Endpoint sourceEndpoint_;
+        std::uint32_t nextSeqNum_;
     };
+
+    /*
+     * retry max count
+     * expected next sequence number
+     * add source endpoint for states keeping
+     */
 }

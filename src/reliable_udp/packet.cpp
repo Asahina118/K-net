@@ -20,7 +20,7 @@ namespace knet::reliable_udp::packet
     }
 
     std::expected<std::vector<std::byte>, reliable_udp::Error>
-        serializer::serialize(const Packet& packet)
+        serializer::serialize_header(const Packet& packet)
     {
         using namespace knet::detail;
 
@@ -41,14 +41,14 @@ namespace knet::reliable_udp::packet
 
         // std::println("[serialize] sequence number={}", packet.header_.sequenceNumber_);
         startIdx += sizeof(packet.header_.packetType_);
-        byte_utils::to_bytes(packet.header_.sequenceNumber_,
+        byte_utils::to_bytes(packet.header_.seqNum_,
                 endian,
                 &bytes,
                 startIdx
                 );
 
 
-        startIdx += sizeof(packet.header_.sequenceNumber_);
+        startIdx += sizeof(packet.header_.seqNum_);
         byte_utils::to_bytes(packet.header_.payloadLength_,
                 endian,
                 &bytes,
@@ -69,7 +69,7 @@ namespace knet::reliable_udp::packet
     }
 
     std::expected<Packet, reliable_udp::Error>
-        serializer::deserialize(std::span<const std::byte> payload)
+        serializer::deserialize_header(std::span<const std::byte> payload)
     {
         using namespace knet::detail;
 
@@ -102,7 +102,7 @@ namespace knet::reliable_udp::packet
         auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
         std::uint32_t sequenceNumber = byte_streams_to_data<std::uint32_t>(
                 endian, 
-                std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::sequenceNumber_))
+                std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::seqNum_))
                 );
 
         // 1 byte enum: size is very unlikely to change. Safe to hardcode
@@ -119,7 +119,7 @@ namespace knet::reliable_udp::packet
 
         return Packet {
             .header_ = PacketHeader {
-                .sequenceNumber_ = sequenceNumber,
+                .seqNum_ = sequenceNumber,
                 .payloadLength_ = payloadLength,
                 .packetType_ = packetType
             },

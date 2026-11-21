@@ -43,6 +43,8 @@ namespace knet::udp
 
         std::expected<ReceivedResult, udp::Error> receive_from(std::span<std::byte> buffer);
 
+        Endpoint get_local_endpoint() const;
+
     private:
         explicit UDPSocket(Endpoint localEndpoint, detail::SocketHandle socket);
 

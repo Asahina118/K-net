@@ -90,4 +90,9 @@ namespace knet::udp
         return receiveResult;
     }
 
+    Endpoint UDPSocket::get_local_endpoint() const
+    {
+        return localEndpoint_;
+    }
+
 }
