@@ -28,28 +28,9 @@ target_link_libraries(udp_echo_server PRIVATE knet)
 
 
 enable_testing()
+include(CTest)
 
-add_library(doctest INTERFACE)
+if(BUILD_TESTING)
+    add_subdirectory(tests test)
+endif()
 
-target_include_directories(doctest INTERFACE
-    ${PROJECT_SOURCE_DIR}/tests/extern/doctest
-)
-
-add_executable(packet_test
-    tests/reliable_udp/packet_test.cpp
-)
-
-target_link_libraries(packet_test PRIVATE
-    knet
-    doctest
-)
-
-target_compile_definitions(packet_test PRIVATE
-    DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-)
-
-set_target_properties(packet_test PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-)
-
-add_test(NAME packet_test COMMAND packet_test)
