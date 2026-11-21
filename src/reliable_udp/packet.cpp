@@ -74,6 +74,7 @@ namespace knet::reliable_udp::packet
         using namespace knet::detail;
 
         if (payload.size() < PACKET_HEADER_SIZE_NO_PADDING) {
+            std::println("[deserialize] error: not enough byte to parse header");
             return std::unexpected(reliable_udp::Error::deserializer_not_enough_byte_to_parse_header);
         }
 
@@ -92,7 +93,9 @@ namespace knet::reliable_udp::packet
                 endian,
                 std::vector<std::byte>(payloadLengthOffsetIt, payloadLengthOffsetIt + sizeof(PacketHeader::payloadLength_))
                 );
+        size_t actualPayloadLength = payload.size() - PACKET_HEADER_SIZE_NO_PADDING;
         if (payload.size() - PACKET_HEADER_SIZE_NO_PADDING != payloadLength) {
+            std::println("[deserialize] error: payload length does not match header parsed len, payload length={} ; header len={}", actualPayloadLength, payloadLength);
             return std::unexpected(reliable_udp::Error::deserializer_payload_len_does_not_match_header_parsed_len);
         }
 
@@ -104,6 +107,10 @@ namespace knet::reliable_udp::packet
 
         // 1 byte enum: size is very unlikely to change. Safe to hardcode
         PacketType packetType = parse_packet_type_from_byte(payload[PACKET_PACKET_TYPE_OFFSET]);
+        if (packetType == PacketType::UNKNOWN) {
+            std::println("[deserialize] error: unknown packet type");
+            return std::unexpected(Error::deserializer_unknown_packet_type);
+        }
 
         std::vector<std::byte> bytes(payloadLength);
         for (size_t i = 0; i < payloadLength; i++) {

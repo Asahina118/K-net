@@ -56,7 +56,7 @@ namespace knet::reliable_udp::packet
         // protocol :
         // packetType : 1 byte
         // sequenceNumber : 4 byte
-        // payloadLength : 3 byte
+        // payloadLength : 2 byte
         // payload: value of payloadLength
         constexpr inline size_t PACKET_PACKET_TYPE_OFFSET = 0;
         constexpr inline size_t PACKET_SEQUENCE_NUMBER_OFFSET = PACKET_PACKET_TYPE_OFFSET + sizeof(PacketType);

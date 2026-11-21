@@ -101,12 +101,15 @@ receive_from(std::span<const std::byte> buffer, ssize_t recv_from_return_value)
         return std::unexpected(Error::socket_received_less_byte_than_header_size);
     }
 
-    return packet::serializer::deserialize(buffer);
+    std::span<const std::byte> toBeDeserialized(buffer.begin(), buffer.begin() + recv_from_return_value);
+
+    return packet::serializer::deserialize(toBeDeserialized);
 }
 
 TEST_CASE("receive packet")
 {
     using namespace knet::reliable_udp::packet;
+    using namespace knet::reliable_udp;
 
     std::array<std::byte, 512> recvBuffer;
     recvBuffer.fill(std::byte(0xFF));
@@ -125,8 +128,23 @@ TEST_CASE("receive packet")
             );
 
     mock_recv_from_return_value = 7;
+    recvBuffer[5] = std::byte(0x00);
+    recvBuffer[6] = std::byte(0x00);
+
+    auto result = receive_from(recvBuffer, mock_recv_from_return_value);
+
     CHECK_EQ(
-            receive_from(recvBuffer, mock_recv_from_return_value),
-            std::expected(serializer::deserialize(recvBuffer))
+            result.error(),
+            Error::deserializer_unknown_packet_type
+            );
+    
+    recvBuffer[0] = std::byte(0x00);
+    result = receive_from(recvBuffer, mock_recv_from_return_value);
+
+    REQUIRE(result.has_value());
+
+    CHECK_EQ(
+            result->payload_.size(),
+            0
             );
 }
