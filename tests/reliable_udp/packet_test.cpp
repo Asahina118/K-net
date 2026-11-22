@@ -1,11 +1,11 @@
+#include "tests/extern/doctest.h"
+
 #include <cstddef>
 #include <expected>
 #include <limits>
 #include <print>
-#include <stdexcept>
 
 #include "include/knet/reliable_udp/error.h"
-#include "tests/extern/doctest.h"
 #include "include/knet/reliable_udp/packet.h"
 #include "src/detail/utils/byte_utils.h"
 

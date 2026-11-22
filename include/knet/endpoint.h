@@ -16,6 +16,7 @@ namespace knet
     class Endpoint
     {
     public:
+        explicit Endpoint();
         explicit Endpoint(sockaddr_in address);
 
         static std::expected<Endpoint, EndpointError>

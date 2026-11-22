@@ -1,20 +1,12 @@
 #pragma once
 
 #include "include/knet/udp/udp_socket.h"
+#include "include/knet/reliable_udp/error.h"
 
 #include <cstdint>
 
 namespace knet::reliable_udp
 {
-    enum class Error 
-    {
-        socket_creation_failed,
-        socket_binding_failed,
-        send_to_failed,
-        data_not_fully_sent,
-        receive_from_failed,
-    };
-
     struct ReceivedResult
     {
         Endpoint sourceEndpoint_;
@@ -25,7 +17,13 @@ namespace knet::reliable_udp
     class ReliableUDPSocket
     {
     public:
-        static std::expected<ReliableUDPSocket, reliable_udp::Error> bind(Endpoint localEndpoint);
+
+        // captures all handshake logics, only returns an established socket
+        static std::expected<ReliableUDPSocket, reliable_udp::Error> 
+            establish(Endpoint localEndpoint, Endpoint peerEndpoint);
+
+        static std::expected<ReliableUDPSocket, reliable_udp::Error> 
+            listen(Endpoint localEndpoint, Endpoint peerEndpoint);
 
         ReliableUDPSocket(const ReliableUDPSocket& other) = delete;
         ReliableUDPSocket& operator=(const ReliableUDPSocket& other) = delete;
@@ -33,26 +31,45 @@ namespace knet::reliable_udp
         ReliableUDPSocket(ReliableUDPSocket&& other) noexcept = default;
         ReliableUDPSocket& operator=(ReliableUDPSocket&& other) noexcept = default;
 
-        std::expected<size_t, reliable_udp::Error> send_to(
-                std::span<const std::byte> data,
-                const Endpoint& destination
-                );
 
-        std::expected<ReceivedResult, reliable_udp::Error> receive(std::span<std::byte> buffer);
+        // no handshake logic, only deals with two states: 
+        // stopped / established
+        std::expected<size_t, reliable_udp::Error> 
+            send(std::span<const std::byte> data);
+
+        std::expected<ReceivedResult, reliable_udp::Error> 
+            receive(std::span<std::byte> buffer);
 
         Endpoint get_local_endpoint() const;
-        Endpoint get_source_endpoint() const;
+        Endpoint get_peer_endpoint() const;
 
     private:
-        explicit ReliableUDPSocket(udp::UDPSocket udpSocket);
+        // passive socket: waits for handshake init
+        enum class State : uint8_t
+        {
+            init = 0,
+            listening,
+            awaiting_hello_ack,
+            awaiting_ack,
+            established,
+            stopped
+        };
+
+        explicit ReliableUDPSocket(udp::UDPSocket udpSocket, Endpoint peerEndpoint);
+
         udp::UDPSocket udpSocket_;
-        Endpoint sourceEndpoint_;
-        std::uint32_t nextSeqNum_;
+        Endpoint peerEndpoint_;
+
+        std::uint32_t nextSeqNumIn_;
+        std::uint32_t nextSeqNumOut_;
+        State state_;
     };
 
-    /*
-     * retry max count
-     * expected next sequence number
-     * add source endpoint for states keeping
+
+    /* design note:
+     *
+     * currently only supports predefined endpoint. No server logic yet
+     * the socket that initializes the handshake keeps being on the active side, no usage case for both-side initialization yet
+     * otherwise would need a random id to decide the handshake initialzer on hello package conflicts
      */
 }

@@ -10,8 +10,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(knet
     src/endpoint.cpp
     src/udp/udp_socket.cpp
-    src/reliable_udp/packet.cpp
     src/detail/socket_handle.cpp
+
+    src/reliable_udp/packet.cpp
+    src/reliable_udp/reliable_udp_socket.cpp
 )
 
 # includes the example main.cpp and server.cpp entry point
