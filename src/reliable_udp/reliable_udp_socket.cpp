@@ -79,14 +79,14 @@ namespace knet::reliable_udp
 
         auto recvResult = udpSocket_.receive_from(buffer_);
         if (!recvResult) {
-            return std::unexpected(Error::socket_handshake_listening_failed);
+            return std::unexpected(Error::handshake_listening_failed);
         }
         auto packetResult = parse_packet_header(recvResult.value());
         if (!packetResult) {
             return std::unexpected(packetResult.error());
         }
         if (packetResult->header_.packetType_ != packet::PacketType::SYN) {
-            return std::unexpected(Error::socket_handshake_listening_packet_type_not_eq_SYN);
+            return std::unexpected(Error::handshake_expected_SYN);
         }
 
         Packet respondPacket = Packet {
@@ -104,7 +104,7 @@ namespace knet::reliable_udp
         }
         auto udpSendResult = udp_send_to_peer(serializedResult.value());
         if (!udpSendResult) {
-            return std::unexpected(Error::socket_handshake_listening_send_SYN_ACK_failed);
+            return std::unexpected(Error::handshake_send_SYN_ACK_failed);
         }
 
         state_ = State::awaiting_ack;
@@ -118,7 +118,7 @@ namespace knet::reliable_udp
         using namespace packet;
 
         if (udpResult.sourceEndpoint_ != peerEndpoint_) {
-            return std::unexpected(Error::socket_handshake_listening_endpoint_not_eq_peer_endpoint);
+            return std::unexpected(Error::handshake_expected_peer_endpoint);
         }
 
         std::span<const std::byte> payload(buffer_.begin(), buffer_.begin() + udpResult.dataSize_);

@@ -16,9 +16,9 @@ namespace knet::reliable_udp
         socket_unestablished_connection,
         socket_recv_connection_stopped,
 
-        socket_handshake_listening_failed,
-        socket_handshake_listening_endpoint_not_eq_peer_endpoint,
-        socket_handshake_listening_packet_type_not_eq_SYN,
-        socket_handshake_listening_send_SYN_ACK_failed
+        handshake_listening_failed,
+        handshake_expected_peer_endpoint,
+        handshake_expected_SYN,
+        handshake_send_SYN_ACK_failed
     };
 }
