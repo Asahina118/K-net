@@ -26,6 +26,8 @@ namespace knet
 
         std::string get_ip_info() const;
 
+        bool operator==(const Endpoint& other) const noexcept;
+
     private:
         explicit Endpoint(sockaddr_in address, std::string ip, uint16_t port);
 

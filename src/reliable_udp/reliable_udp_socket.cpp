@@ -11,7 +11,8 @@ namespace knet::reliable_udp
         peerEndpoint_(peerEndpoint),
         state_(State::init),
         nextSeqNumIn_(0),
-        nextSeqNumOut_(0)
+        nextSeqNumOut_(0),
+        buffer_()
     {}
 
     std::expected<ReliableUDPSocket, reliable_udp::Error> 
@@ -33,7 +34,101 @@ namespace knet::reliable_udp
             return std::unexpected(Error::socket_creation_failed);
         }
         // TODO: implement passive connection
-        return ReliableUDPSocket(std::move(*bindResult), peerEndpoint);
+
+        ReliableUDPSocket socket(std::move(*bindResult), peerEndpoint);
+        socket.state_ = State::listening;
+        while (socket.state_ != State::established) {
+            auto handshakeResult = socket.listen_to_handshake();
+            if (!handshakeResult) {
+                return std::unexpected(handshakeResult.error());
+            }
+        }
+
+        return socket;
+    }
+
+    std::expected<void, reliable_udp::Error>
+        ReliableUDPSocket::listen_to_handshake()
+    {
+        using namespace packet;
+        switch (state_) {
+            case State::init:
+                return {};
+
+            case State::listening:
+                return listen_to_handshake();
+
+            case State::awaiting_hello_ack:
+                return {};
+
+            case State::awaiting_ack: 
+                return {};
+
+            case State::established:
+                return {};
+
+            case State::stopped:
+                return {};
+        }
+    }
+
+    std::expected<void, reliable_udp::Error>
+        ReliableUDPSocket::handshake_listening()
+    {
+        using namespace packet;
+
+        auto recvResult = udpSocket_.receive_from(buffer_);
+        if (!recvResult) {
+            return std::unexpected(Error::socket_handshake_listening_failed);
+        }
+        auto packetResult = parse_packet_header(recvResult.value());
+        if (!packetResult) {
+            return std::unexpected(packetResult.error());
+        }
+        if (packetResult->header_.packetType_ != packet::PacketType::SYN) {
+            return std::unexpected(Error::socket_handshake_listening_packet_type_not_eq_SYN);
+        }
+
+        Packet respondPacket = Packet {
+            .header_ = PacketHeader {
+                .seqNum_ = 0,
+                .payloadLength_ = 0,
+                .packetType_ = PacketType::SYN_ACK
+            },
+            .payload_{}
+        };
+
+        auto serializedResult = serializer::serialize_header(respondPacket);
+        if (!serializedResult) {
+            return std::unexpected(serializedResult.error());
+        }
+        auto udpSendResult = udp_send_to_peer(serializedResult.value());
+        if (!udpSendResult) {
+            return std::unexpected(Error::socket_handshake_listening_send_SYN_ACK_failed);
+        }
+
+        state_ = State::awaiting_ack;
+        return {};
+    }
+
+
+    std::expected<packet::Packet, reliable_udp::Error>
+        ReliableUDPSocket::parse_packet_header(udp::ReceivedResult udpResult)
+    {
+        using namespace packet;
+
+        if (udpResult.sourceEndpoint_ != peerEndpoint_) {
+            return std::unexpected(Error::socket_handshake_listening_endpoint_not_eq_peer_endpoint);
+        }
+
+        std::span<const std::byte> payload(buffer_.begin(), buffer_.begin() + udpResult.dataSize_);
+        auto deserializedResult = serializer::deserialize_header(payload);
+        if (!deserializedResult) {
+            // TODO: log error, retry
+            return std::unexpected(deserializedResult.error());
+        }
+
+        return deserializedResult.value();
     }
 
 
@@ -45,7 +140,6 @@ namespace knet::reliable_udp
         return {};
     }
 
-    // std::expected
 
     /*
      * this function gets called after the registration of source endpoint is completed
@@ -63,19 +157,15 @@ namespace knet::reliable_udp
                 : std::unexpected(Error::socket_unestablished_connection);
         }
 
-        // -1 is handled
-        std::expected<udp::ReceivedResult, udp::Error> udpResult = udpSocket_.receive_from(buffer);
-
-        if (!udpResult || udpResult->dataSize_ < PACKET_HEADER_SIZE_NO_PADDING) {
-            // 
+        auto udpRecvResult = udpSocket_.receive_from(buffer);
+        if (!udpRecvResult) {
+            return std::unexpected(Error::socket_receive_failed);
         }
-
-        std::expected<Packet, reliable_udp::Error> packet = serializer::deserialize_header(buffer);
-        if (!packet) {
-            // TODO: log error, retry
+        auto packetResult = parse_packet_header(udpRecvResult.value());
+        if (!packetResult) {
+            return std::unexpected(packetResult.error());
         }
-
-        std::uint32_t recvSeqNum = packet->header_.seqNum_;
+        std::uint32_t recvSeqNum = packetResult->header_.seqNum_;
 
         if (recvSeqNum < nextSeqNumIn_) [[unlikely]] {
             // TODO : 

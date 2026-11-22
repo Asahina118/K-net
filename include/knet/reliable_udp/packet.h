@@ -15,6 +15,7 @@ namespace knet::reliable_udp::packet
         DATA = 0,
         ACK,
         SYN,
+        SYN_ACK,
         FIN,
         UNKNOWN
     };

@@ -37,6 +37,13 @@ namespace knet
         return Endpoint(address, ip, port);
     }
 
+    bool Endpoint::operator==(const Endpoint& other) const noexcept
+    {
+        return address_.sin_family == other.address_.sin_family
+            && address_.sin_addr.s_addr == other.address_.sin_addr.s_addr
+            && address_.sin_port == other.address_.sin_port;
+    }
+
     const sockaddr_in& Endpoint::native() const
     {
         return address_;

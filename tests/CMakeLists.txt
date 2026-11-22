@@ -1,7 +1,7 @@
 add_library(doctest INTERFACE)
 
 target_include_directories(doctest INTERFACE
-    ${PROJECT_SOURCE_DIR}/tests/extern/doctest
+    ${PROJECT_SOURCE_DIR}/tests/extern
 )
 
 add_executable(knet_test
@@ -15,11 +15,6 @@ target_link_libraries(knet_test PRIVATE
     knet
     doctest
 )
-
-# target_compile_definitions(knet_test PRIVATE
-#     DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-# )
-#
 
 set_target_properties(knet_test PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"

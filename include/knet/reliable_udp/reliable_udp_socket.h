@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/knet/reliable_udp/packet.h"
 #include "include/knet/udp/udp_socket.h"
 #include "include/knet/reliable_udp/error.h"
 
@@ -60,9 +61,25 @@ namespace knet::reliable_udp
         udp::UDPSocket udpSocket_;
         Endpoint peerEndpoint_;
 
+        static constexpr std::size_t MAX_BUFFER_SIZE = packet::MAX_SEQUENCE_PAYLOAD_LENGTH;
+        std::array<std::byte, MAX_BUFFER_SIZE> buffer_;
+
         std::uint32_t nextSeqNumIn_;
         std::uint32_t nextSeqNumOut_;
         State state_;
+
+        std::expected<void, reliable_udp::Error> listen_to_handshake();
+        
+        std::expected<packet::Packet, reliable_udp::Error>
+            parse_packet_header(udp::ReceivedResult);
+
+        std::expected<void, reliable_udp::Error> handshake_listening();
+
+        [[gnu::always_inline]] inline std::expected<size_t, udp::Error> udp_send_to_peer(std::span<const std::byte> payload)
+        {
+            return udpSocket_.send_to(payload, peerEndpoint_);
+        };
+
     };
 
 

@@ -14,7 +14,8 @@ namespace knet::reliable_udp::packet
             case 0 : return PacketType::DATA;
             case 1 : return PacketType::ACK;
             case 2 : return PacketType::SYN;
-            case 3 : return PacketType::FIN;
+            case 3 : return PacketType::SYN_ACK;
+            case 4 : return PacketType::FIN;
             default : return PacketType::UNKNOWN;
         }
     }
@@ -46,7 +47,6 @@ namespace knet::reliable_udp::packet
                 &bytes,
                 startIdx
                 );
-
 
         startIdx += sizeof(packet.header_.seqNum_);
         byte_utils::to_bytes(packet.header_.payloadLength_,
@@ -99,18 +99,18 @@ namespace knet::reliable_udp::packet
             return std::unexpected(reliable_udp::Error::deserializer_payload_len_does_not_match_header_parsed_len);
         }
 
+        // 1 byte enum: size is very unlikely to change. Safe to hardcode
+        PacketType packetType = parse_packet_type_from_byte(payload[PACKET_PACKET_TYPE_OFFSET]);
+        if (packetType == PacketType::UNKNOWN) {
+            std::println("[deserialize] error: unknown packet type={}", static_cast<std::uint8_t>(payload[PACKET_PACKET_TYPE_OFFSET]));
+            return std::unexpected(Error::deserializer_unknown_packet_type);
+        }
+
         auto sequenceNumberOffsetIt = payload.begin() + PACKET_SEQUENCE_NUMBER_OFFSET;
         std::uint32_t sequenceNumber = byte_streams_to_data<std::uint32_t>(
                 endian, 
                 std::vector<std::byte>(sequenceNumberOffsetIt, sequenceNumberOffsetIt + sizeof(PacketHeader::seqNum_))
                 );
-
-        // 1 byte enum: size is very unlikely to change. Safe to hardcode
-        PacketType packetType = parse_packet_type_from_byte(payload[PACKET_PACKET_TYPE_OFFSET]);
-        if (packetType == PacketType::UNKNOWN) {
-            std::println("[deserialize] error: unknown packet type");
-            return std::unexpected(Error::deserializer_unknown_packet_type);
-        }
 
         std::vector<std::byte> bytes(payloadLength);
         for (size_t i = 0; i < payloadLength; i++) {
