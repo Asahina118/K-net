@@ -38,7 +38,7 @@ namespace knet::reliable_udp
         ReliableUDPSocket socket(std::move(*bindResult), peerEndpoint);
         socket.state_ = State::listening;
         while (socket.state_ != State::established) {
-            auto handshakeResult = socket.listen_to_handshake();
+            auto handshakeResult = socket.handle_handshake_state();
             if (!handshakeResult) {
                 return std::unexpected(handshakeResult.error());
             }
@@ -48,7 +48,7 @@ namespace knet::reliable_udp
     }
 
     std::expected<void, reliable_udp::Error>
-        ReliableUDPSocket::listen_to_handshake()
+        ReliableUDPSocket::handle_handshake_state()
     {
         using namespace packet;
         switch (state_) {
@@ -56,7 +56,7 @@ namespace knet::reliable_udp
                 return {};
 
             case State::listening:
-                return listen_to_handshake();
+                return handshake_listening();
 
             case State::awaiting_hello_ack:
                 return {};

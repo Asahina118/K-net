@@ -68,7 +68,7 @@ namespace knet::reliable_udp
         std::uint32_t nextSeqNumOut_;
         State state_;
 
-        std::expected<void, reliable_udp::Error> listen_to_handshake();
+        std::expected<void, reliable_udp::Error> handle_handshake_state();
         
         std::expected<packet::Packet, reliable_udp::Error>
             parse_packet_header(udp::ReceivedResult);
